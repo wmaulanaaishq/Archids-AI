@@ -1,59 +1,121 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# ArchiAgent 🏛️🤖
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**ArchiAgent** adalah Micro-CRM berbasis AI Agent yang dirancang khusus untuk membantu freelance arsitek dalam mengelola proyek, klien, dan pembuatan tagihan (invoice) secara otomatis melalui antarmuka *chat* interaktif. 
 
-## About Laravel
+Aplikasi ini dibangun sebagai proyek UAS Semester 4, menggabungkan kekuatan Laravel 11, Livewire v3, Tailwind CSS, dan integrasi Artificial Intelligence (AI) menggunakan DeepSeek-V4-Pro via Featherless.ai.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+![ArchiAgent Preview](https://via.placeholder.com/800x400.png?text=ArchiAgent+-+AI+Invoice+Assistant) <!-- Silakan ganti dengan screenshot aplikasi Anda -->
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## ✨ Fitur Utama
 
-## Learning Laravel
+### 1. 🤖 AI Chat Assistant (Function Calling)
+- Interaksi natural menggunakan Bahasa Indonesia.
+- **Sliding Window Memory**: AI mengingat konteks percakapan (hingga 20 pesan terakhir).
+- **Auto Data Extraction**: AI otomatis mengekstrak informasi penting dari percakapan (Nama Klien, Proyek, No Invoice, Termin, Persentase, dan Nominal) berkat fitur *Function Calling*.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### 2. ⚡ Livewire v3 Chat Workspace
+- UI/UX modern dengan desain *Glassmorphism* dan mode gelap (Dark Theme).
+- **Real-time Feedback**: Animasi *typing indicator* dan proses *loading* asinkron tanpa reload halaman.
+- **Visual Confirmation Card**: Menampilkan ringkasan draf invoice hasil ekstraksi AI sebelum disimpan ke database.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 3. 📄 Blueprint-Style PDF Export
+- Menghasilkan PDF invoice dengan nilai estetika tinggi bergaya *Monospace Minimalist* khas arsitek.
+- Kustomisasi warna aksen, logo studio, dan detail rekening (*Payment Terms*) melalui tabel `invoice_settings`.
+- Menggunakan `barryvdh/laravel-dompdf` dengan struktur HTML murni dan *inline CSS* agar hasil render stabil.
 
-## Laravel Sponsors
+### 4. 🗄️ Relasional Database Management
+- Struktur database rapi menggunakan Eloquent ORM: `Users`, `InvoiceSettings`, `Clients`, `Projects`, dan `Invoices`.
+- Sistem fallback otomatis (Pembuatan record Client & Project otomatis jika belum ada di database).
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+## 🛠️ Teknologi yang Digunakan
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+- **Backend**: Laravel 11, PHP 8.2+
+- **Frontend**: Livewire v3, Tailwind CSS, Alpine.js (bawaan Livewire)
+- **Database**: MySQL
+- **AI Integration**: Featherless.ai (Model: `deepseek-ai/DeepSeek-V4-Pro`)
+- **PDF Generator**: barryvdh/laravel-dompdf
+- **HTTP Client**: Guzzle (Laravel HTTP Client)
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 🚀 Panduan Instalasi
 
-## Code of Conduct
+### 1. Prasyarat
+- PHP >= 8.2 (Ekstensi: `zip`, `dom`, `gd`)
+- Composer
+- MySQL (XAMPP / Laragon / dsb)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 2. Langkah Instalasi
 
-## Security Vulnerabilities
+```bash
+# 1. Clone repositori
+git clone https://github.com/wmaulanaaishq/Archids-AI.git
+cd Archids-AI
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# 2. Install dependensi PHP
+composer install
 
-## License
+# 3. Setup file environment
+cp .env.example .env
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# 4. Generate Application Key
+php artisan key:generate
+```
+
+### 3. Konfigurasi `.env`
+Buka file `.env` dan atur koneksi database serta kredensial API AI:
+
+```env
+# Database
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=archiagent_db # Pastikan database ini sudah dibuat
+DB_USERNAME=root
+DB_PASSWORD=
+
+# Featherless.ai API (OpenAI Compatible)
+OPENAI_API_KEY=your_featherless_api_key_here
+OPENAI_BASE_URL=https://api.featherless.ai/v1
+OPENAI_REQUEST_TIMEOUT=60
+
+# ArchiAI Custom Settings
+ARCHIAI_MODEL=deepseek-ai/DeepSeek-V4-Pro
+ARCHIAI_MAX_HISTORY=20
+```
+
+### 4. Jalankan Migrasi & Seeding Dummy User
+```bash
+php artisan migrate
+
+# (Opsional) Buat user demo untuk testing
+mysql -u root archiagent_db -e "INSERT INTO users (id, name, email, password, created_at, updated_at) VALUES (1, 'Arsitek Demo', 'demo@archiagent.test', 'password', NOW(), NOW());"
+```
+
+### 5. Jalankan Server Development
+```bash
+php artisan serve
+```
+Aplikasi dapat diakses di `http://127.0.0.1:8000`.
+
+---
+
+## 🏗️ Struktur Proyek (Fase Pengembangan)
+
+Pengembangan aplikasi ini dibagi menjadi 4 fase utama:
+1. **Fase 1**: Setup Database, Migrations (5 tabel dengan cascade delete), dan Eloquent Models.
+2. **Fase 2**: Implementasi `ArchiAIService` menggunakan HTTP Client ke Featherless.ai, integrasi *Sliding Window Memory*, dan *Function Calling*.
+3. **Fase 3**: Pembuatan UI/UX dengan komponen `ChatWorkspace` Livewire v3 dan Tailwind CSS.
+4. **Fase 4**: Pembuatan fitur cetak PDF (*Monospace Minimalist*) menggunakan DomPDF dengan konfigurasi dari `InvoiceController`.
+
+---
+
+## 👨‍💻 Kontributor
+- **W. Maulana Aishq** - *Project UAS Semester 4*
+
+---
+*Dibuat dengan ❤️ untuk kemudahan freelance arsitek Indonesia.*
