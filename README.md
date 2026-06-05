@@ -4,8 +4,6 @@
 
 Aplikasi ini dibangun sebagai proyek UAS Semester 4, menggabungkan kekuatan Laravel 11, Livewire v3, Tailwind CSS, dan integrasi Artificial Intelligence (AI) menggunakan DeepSeek-V4-Pro via Featherless.ai.
 
----
-
 ## ✨ Fitur Utama
 
 ### 1. 🤖 AI Chat Assistant (Function Calling)
