@@ -25,8 +25,6 @@ Aplikasi ini dibangun sebagai proyek UAS Semester 4, menggabungkan kekuatan Lara
 - Struktur database rapi menggunakan Eloquent ORM: `Users`, `InvoiceSettings`, `Clients`, `Projects`, dan `Invoices`.
 - Sistem fallback otomatis (Pembuatan record Client & Project otomatis jika belum ada di database).
 
----
-
 ## 🛠️ Teknologi yang Digunakan
 
 - **Backend**: Laravel 11, PHP 8.2+
