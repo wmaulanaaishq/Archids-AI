@@ -1,4 +1,4 @@
-# ArchiAgent 🏛️🤖
+# ArchiAgent 
 
 **ArchiAgent** adalah Micro-CRM berbasis AI Agent yang dirancang khusus untuk membantu arsitek dalam mengelola proyek, klien, dan pembuatan tagihan (invoice) secara otomatis melalui antarmuka *chat* interaktif. 
 
