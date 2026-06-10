@@ -13,7 +13,7 @@ Aplikasi ini dibangun sebagai proyek UAS Semester 4, menggabungkan kekuatan Lara
 
 ### 2. ⚡ Livewire v3 Chat Workspace
 - UI/UX modern dengan desain *Glassmorphism* dan mode gelap (Dark Theme).
-- **Real-time Feedback**: Animasi *typing indicator* dan proses *loading* asinkron tanpa reload halaman.
+- **Real-time Feedback: Animasi *typing indicator* dan proses *loading* asinkron tanpa reload halaman.
 - **Visual Confirmation Card**: Menampilkan ringkasan draf invoice hasil ekstraksi AI sebelum disimpan ke database.
 
 ### 3. 📄 Blueprint-Style PDF Export
