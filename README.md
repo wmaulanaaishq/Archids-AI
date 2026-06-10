@@ -58,7 +58,6 @@ cp .env.example .env
 
 # 4. Generate Application Key
 php artisan key:generate
-```
 
 ### 3. Konfigurasi `.env`
 Buka file `.env` dan atur koneksi database serta kredensial API AI:
