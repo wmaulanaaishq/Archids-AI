@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Services\ArchiAIService;
 use App\Models\ProjectDocument;
 use App\Services\ChromaDBService;
+use App\Services\PdfRagService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
@@ -182,24 +183,11 @@ class ChatWorkspace extends Component
             }
 
             // --- RAG: Cek ChromaDB untuk referensi PDF ---
-            try {
-                $chroma = new ChromaDBService();
-                $collectionId = $chroma->getOrCreateCollection('archids_documents');
-
-                $queryEmbedding = $this->getEmbedding($userMessage);
-                
-                $where = $this->selectedProjectId ? ['project_id' => $this->selectedProjectId] : null;
-                $searchResult = $chroma->query($collectionId, [$queryEmbedding], 3, $where);
-                
-                if (!empty($searchResult['documents'][0])) {
-                    $ragContext = "\nREFERENSI DATA DARI DOKUMEN PDF (Gunakan informasi ini untuk menjawab pertanyaan atau mengekstrak data jika relevan):\n";
-                    foreach ($searchResult['documents'][0] as $index => $docText) {
-                        $ragContext .= "--- Bagian " . ($index + 1) . " ---\n" . $docText . "\n";
-                    }
-                    $systemContext = ($systemContext ?? '') . $ragContext;
-                }
-            } catch (\Exception $e) {
-                Log::warning("ChromaDB Query Failed: " . $e->getMessage());
+            $ragService = app(PdfRagService::class);
+            $ragContext = $ragService->searchRelevantContext($userMessage, $this->selectedProjectId);
+            
+            if (!empty($ragContext)) {
+                $systemContext = ($systemContext ?? '') . $ragContext;
             }
 
             // 4. Panggil ArchiAIService
@@ -411,49 +399,21 @@ class ChatWorkspace extends Component
                 'file_path' => $path,
             ]);
 
-            // Parse PDF
-            $parser = new Parser();
-            $pdf = $parser->parseFile(storage_path('app/public/' . $path));
-            $text = $pdf->getText();
+            $absolutePath = storage_path('app/public/' . $path);
             
-            if (empty(trim($text))) {
-                throw new \Exception('Dokumen tidak memiliki teks yang bisa dibaca. Pastikan PDF Anda bukan hasil scan (gambar) melainkan dokumen teks asli.');
-            }
-
-            // Chunk text
-            $chunks = $this->chunkText($text, 1000, 200);
-
-            // Prep payload for ChromaDB
-            $ids = [];
-            $embeddings = [];
-            $documents = [];
-            $metadatas = [];
-
-            foreach ($chunks as $index => $chunk) {
-                // Gunakan local embedding karena Featherless.ai tidak mendukung model embeddings
-                $embedding = $this->getEmbedding($chunk);
-                
-                $ids[] = 'doc_' . $document->id . '_chunk_' . $index;
-                $embeddings[] = $embedding;
-                $documents[] = $chunk;
-                $metadatas[] = [
-                    'document_id' => $document->id,
-                    'project_id' => $this->selectedProjectId ?? 0,
-                    'filename' => $filename,
+            // Process PDF with RagService
+            $ragService = app(PdfRagService::class);
+            $success = $ragService->processPdf($absolutePath, $filename, $this->selectedProjectId);
+            
+            if ($success) {
+                $this->chatLogs[] = [
+                    'role' => 'assistant',
+                    'content' => "✅ Dokumen **{$filename}** berhasil diunggah dan dianalisis. Saya telah menghafalnya, silakan ajukan pertanyaan terkait dokumen ini.",
                 ];
+                Log::info("PDF Uploaded & Indexed to Chroma", ['filename' => $filename]);
+            } else {
+                throw new \Exception("Gagal menganalisis dokumen PDF. Pastikan file berupa teks bukan sekedar gambar scan.");
             }
-
-            // Push to ChromaDB Cloud
-            $chroma = new ChromaDBService();
-            $collectionId = $chroma->getOrCreateCollection('archids_documents');
-            $chroma->addDocuments($collectionId, $ids, $embeddings, $documents, $metadatas);
-
-            $this->chatLogs[] = [
-                'role' => 'assistant',
-                'content' => "✅ Dokumen **{$filename}** berhasil diunggah dan dianalisis. Saya telah menghafalnya, silakan ajukan pertanyaan terkait dokumen ini.",
-            ];
-
-            Log::info("PDF Uploaded & Indexed to Chroma", ['filename' => $filename, 'chunks' => count($chunks)]);
 
         } catch (\Exception $e) {
             Log::error("Upload PDF Error: " . $e->getMessage());
@@ -467,42 +427,7 @@ class ChatWorkspace extends Component
         $this->isProcessing = false;
     }
 
-    private function chunkText(string $text, int $chunkSize = 1000, int $overlap = 200)
-    {
-        $text = preg_replace('/\s+/', ' ', trim($text));
-        $length = mb_strlen($text);
-        $chunks = [];
-        $i = 0;
-        
-        while ($i < $length) {
-            $chunk = mb_substr($text, $i, $chunkSize);
-            if (mb_strlen(trim($chunk)) > 50) {
-                $chunks[] = $chunk;
-            }
-            $i += ($chunkSize - $overlap);
-        }
-        
-        return $chunks;
-    }
 
-    private function getEmbedding(string $text): array
-    {
-        // Menggunakan AIML API untuk Embedding sesuai permintaan
-        $apiKey = env('AIMLAPI_KEY', '890271b32e960a1bf58709fcd926d431');
-        $baseUrl = env('AIMLAPI_BASE_URL', 'https://api.aimlapi.com/v1');
-
-        $client = \OpenAI::factory()
-            ->withApiKey($apiKey)
-            ->withBaseUri($baseUrl)
-            ->make();
-
-        $response = $client->embeddings()->create([
-            'model' => 'text-embedding-3-small', // AIML API mendukung proxy model ini
-            'input' => $text,
-        ]);
-
-        return $response->embeddings[0]->embedding;
-    }
 
     public function logout()
     {

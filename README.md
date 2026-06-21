@@ -4,8 +4,7 @@
 
 Aplikasi ini dibangun sebagai proyek UAS Semester 4, menggabungkan kekuatan Laravel 11, Livewire v3, Tailwind CSS, dan integrasi Artificial Intelligence (AI) menggunakan DeepSeek-V4-Pro via Featherless.ai.
 
-![ArchiAgent Preview](https://via.placeholder.com/800x400.png?text=ArchiAgent+-+AI+Invoice+Assistant) <!-- Silakan ganti dengan screenshot aplikasi Anda -->
-
+![ArchiAgent Preview](public/backgroud_asset/landingpage.png) <!-- Screenshot Aplikasi -->
 ---
 
 ## ✨ Fitur Utama
