@@ -40,6 +40,9 @@ class InvoiceController extends Controller
             ];
         }
 
+        // 3.5 Ambil custom template (jika ada)
+        $template = \App\Models\InvoiceTemplate::where('user_id', $userId)->first();
+
         // 4. Siapkan data untuk view PDF
         $data = [
             'invoice' => $invoice,
@@ -47,10 +50,12 @@ class InvoiceController extends Controller
             'client' => $client,
             'settings' => $settings,
             'primaryColor' => $settings->primary_color ?: '#1a4d4a',
+            'customTemplate' => $template,
         ];
 
         // 5. Generate PDF
-        $pdf = Pdf::loadView('invoices.pdf', $data);
+        $view = $template && $template->background_path ? 'invoices.custom-pdf' : 'invoices.pdf';
+        $pdf = Pdf::loadView($view, $data);
 
         $pdf->setPaper('A4', 'portrait');
 

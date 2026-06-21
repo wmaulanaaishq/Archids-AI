@@ -2,24 +2,43 @@
 
 namespace App\Livewire;
 
+use App\Models\ChatLog;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Project;
 use App\Services\ArchiAIService;
+use App\Models\ProjectDocument;
+use App\Services\ChromaDBService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
+use Smalot\PdfParser\Parser;
 
 #[Layout('components.layouts.app')]
 #[Title('ArchiAgent — AI Invoice Assistant')]
 class ChatWorkspace extends Component
 {
+    use WithFileUploads;
+
+    public $pdfFile;
+    
     /**
      * Input pesan dari user.
      */
     public string $message = '';
+
+    /**
+     * Pencarian proyek di sidebar.
+     */
+    public string $searchProject = '';
+
+    /**
+     * ID Proyek yang sedang dipilih.
+     */
+    public ?int $selectedProjectId = null;
 
     /**
      * Riwayat chat sesi saat ini.
@@ -38,19 +57,73 @@ class ChatWorkspace extends Component
     public array $draftData = [];
 
     /**
+     * Flag edit inline untuk draft invoice.
+     */
+    public bool $isEditingDraft = false;
+
+    /**
      * Flag loading state.
      */
     public bool $isProcessing = false;
 
     /**
-     * Mount: tambahkan pesan selamat datang dari AI.
+     * State untuk edit nama proyek.
+     */
+    public ?int $editingProjectId = null;
+    public string $editingProjectName = '';
+
+    /**
+     * Mount: load history
      */
     public function mount(): void
     {
+        $this->loadChatHistory();
+    }
+
+    /**
+     * Load riwayat chat dari database
+     */
+    public function loadChatHistory(): void
+    {
+        $userId = Auth::id() ?? 1;
+        
+        $logs = ChatLog::where('user_id', $userId)
+            ->where('project_id', $this->selectedProjectId)
+            ->orderBy('created_at', 'asc')
+            ->get();
+            
+        if ($logs->isEmpty()) {
+            $this->chatLogs = [];
+        } else {
+            $this->chatLogs = $logs->map(fn($log) => [
+                'role' => $log->role,
+                'content' => $log->content,
+                'download_url' => $log->download_url,
+            ])->toArray();
+        }
+        
+        $this->dispatch('scroll-to-bottom');
+    }
+
+    /**
+     * Simpan pesan ke memori array dan database
+     */
+    private function appendChatAndSave(string $role, string $content, ?string $downloadUrl = null): void
+    {
         $this->chatLogs[] = [
-            'role' => 'assistant',
-            'content' => "Halo! 👋 Saya **ArchiAgent**, asisten AI Anda untuk membuat invoice proyek arsitektur.\n\nSilakan ceritakan detail invoice yang ingin Anda buat. Saya butuh informasi berikut:\n\n• Nama klien\n• Nama proyek\n• Nomor invoice\n• Nama termin\n• Persentase termin\n• Nominal pembayaran\n\nAnda bisa menyebutkan semuanya sekaligus atau satu per satu — saya akan memandu Anda. 😊",
+            'role' => $role,
+            'content' => $content,
+            'download_url' => $downloadUrl,
         ];
+        
+        $userId = Auth::id() ?? 1;
+        ChatLog::create([
+            'user_id' => $userId,
+            'project_id' => $this->selectedProjectId,
+            'role' => $role,
+            'content' => $content,
+            'download_url' => $downloadUrl,
+        ]);
     }
 
     /**
@@ -63,11 +136,8 @@ class ChatWorkspace extends Component
             return;
         }
 
-        // 1. Masukkan pesan user ke chatLogs
-        $this->chatLogs[] = [
-            'role' => 'user',
-            'content' => $trimmed,
-        ];
+        // 1. Masukkan pesan user ke chatLogs dan database
+        $this->appendChatAndSave('user', $trimmed);
 
         // Simpan pesan lalu kosongkan input
         $userMessage = $trimmed;
@@ -90,9 +160,51 @@ class ChatWorkspace extends Component
             // Hapus pesan terakhir (karena processChat akan menambahkannya sendiri)
             array_pop($historyForAI);
 
-            // 3. Panggil ArchiAIService
+            // 3. Bangun Konteks Klien/Proyek jika ada yang sedang dipilih
+            $systemContext = null;
+            if ($this->selectedProjectId) {
+                $activeProject = Project::with(['client', 'invoices'])->find($this->selectedProjectId);
+                if ($activeProject) {
+                    $systemContext = "INFORMASI KONTEKS SAAT INI:\n";
+                    $systemContext .= "User sedang bekerja pada ruang kerja proyek spesifik. Jika user meminta membuat draft tanpa menyebut nama klien/proyek, SELALU GUNAKAN data berikut:\n";
+                    $systemContext .= "- Nama Klien: " . ($activeProject->client->client_name ?? '-') . "\n";
+                    $systemContext .= "- Nama Proyek: " . $activeProject->project_name . "\n\n";
+                    
+                    if ($activeProject->invoices->isNotEmpty()) {
+                        $systemContext .= "Riwayat Termin yang SUDAH DIBUAT (jangan buat ulang termin ini):\n";
+                        foreach ($activeProject->invoices as $inv) {
+                            $systemContext .= "  - {$inv->invoice_number} | {$inv->termin_name} ({$inv->percentage}%)\n";
+                        }
+                    } else {
+                        $systemContext .= "Belum ada termin yang dibuat untuk proyek ini (ini akan menjadi termin pertama).\n";
+                    }
+                }
+            }
+
+            // --- RAG: Cek ChromaDB untuk referensi PDF ---
+            try {
+                $chroma = new ChromaDBService();
+                $collectionId = $chroma->getOrCreateCollection('archids_documents');
+
+                $queryEmbedding = $this->getEmbedding($userMessage);
+                
+                $where = $this->selectedProjectId ? ['project_id' => $this->selectedProjectId] : null;
+                $searchResult = $chroma->query($collectionId, [$queryEmbedding], 3, $where);
+                
+                if (!empty($searchResult['documents'][0])) {
+                    $ragContext = "\nREFERENSI DATA DARI DOKUMEN PDF (Gunakan informasi ini untuk menjawab pertanyaan atau mengekstrak data jika relevan):\n";
+                    foreach ($searchResult['documents'][0] as $index => $docText) {
+                        $ragContext .= "--- Bagian " . ($index + 1) . " ---\n" . $docText . "\n";
+                    }
+                    $systemContext = ($systemContext ?? '') . $ragContext;
+                }
+            } catch (\Exception $e) {
+                Log::warning("ChromaDB Query Failed: " . $e->getMessage());
+            }
+
+            // 4. Panggil ArchiAIService
             $service = app(ArchiAIService::class);
-            $result = $service->processChat($userMessage, $historyForAI);
+            $result = $service->processChat($userMessage, $historyForAI, $systemContext);
 
             // 4. Handle response
             if ($result['type'] === 'function_call') {
@@ -106,20 +218,15 @@ class ChatWorkspace extends Component
                 ];
             } else {
                 // AI mengembalikan pesan teks biasa
-                $this->chatLogs[] = [
-                    'role' => 'assistant',
-                    'content' => $result['data']['content'] ?? 'Maaf, saya tidak dapat memproses permintaan Anda.',
-                ];
+                $aiResponse = $result['data']['content'] ?? 'Maaf, saya tidak dapat memproses permintaan Anda.';
+                $this->appendChatAndSave('assistant', $aiResponse);
             }
         } catch (\Exception $e) {
             Log::error('ChatWorkspace sendMessage Error', [
                 'message' => $e->getMessage(),
             ]);
 
-            $this->chatLogs[] = [
-                'role' => 'assistant',
-                'content' => '⚠️ Maaf, terjadi kesalahan saat menghubungi server AI. Silakan coba lagi dalam beberapa saat.',
-            ];
+            $this->appendChatAndSave('assistant', '⚠️ Maaf, terjadi kesalahan saat menghubungi server AI. Silakan coba lagi dalam beberapa saat.');
         } finally {
             $this->isProcessing = false;
             $this->dispatch('scroll-to-bottom');
@@ -173,23 +280,30 @@ class ChatWorkspace extends Component
                 'status' => 'Pending',
             ]);
 
-            // 5. Reset state konfirmasi
+            // 5. Jika ini dari "New Chat", tautkan semua riwayat obrolan ke proyek baru ini
+            if (is_null($this->selectedProjectId)) {
+                ChatLog::where('user_id', $userId)
+                    ->whereNull('project_id')
+                    ->update(['project_id' => $project->id]);
+                
+                $this->selectedProjectId = $project->id;
+            }
+
+            // 6. Reset state konfirmasi
             $this->showConfirmationCard = false;
             $this->draftData = [];
 
-            // 6. Tambahkan pesan sukses dengan link download
+            // 6. Tambahkan pesan sukses dengan link download ke database
             $downloadUrl = route('invoice.download', $invoice->id);
             $formattedAmount = 'Rp ' . number_format($invoice->amount, 0, ',', '.');
+            
+            $successMsg = "✅ **Invoice berhasil disimpan!**\n\n"
+                . "📄 **{$invoice->invoice_number}** — {$invoice->termin_name}\n"
+                . "💰 Nominal: **{$formattedAmount}**\n"
+                . "📊 Status: **Pending**\n\n"
+                . "Silakan unduh invoice Anda melalui tombol di bawah ini.";
 
-            $this->chatLogs[] = [
-                'role' => 'assistant',
-                'content' => "✅ **Invoice berhasil disimpan!**\n\n"
-                    . "📄 **{$invoice->invoice_number}** — {$invoice->termin_name}\n"
-                    . "💰 Nominal: **{$formattedAmount}**\n"
-                    . "📊 Status: **Pending**\n\n"
-                    . "Silakan unduh invoice Anda melalui tombol di bawah ini.",
-                'download_url' => $downloadUrl,
-            ];
+            $this->appendChatAndSave('assistant', $successMsg, $downloadUrl);
 
         } catch (\Exception $e) {
             Log::error('ChatWorkspace confirmAndSave Error', [
@@ -197,10 +311,7 @@ class ChatWorkspace extends Component
                 'draft_data' => $this->draftData,
             ]);
 
-            $this->chatLogs[] = [
-                'role' => 'assistant',
-                'content' => '⚠️ Maaf, terjadi kesalahan saat menyimpan invoice. Silakan coba lagi.',
-            ];
+            $this->appendChatAndSave('assistant', '⚠️ Maaf, terjadi kesalahan saat menyimpan invoice. Silakan coba lagi.');
         }
 
         $this->dispatch('scroll-to-bottom');
@@ -209,21 +320,216 @@ class ChatWorkspace extends Component
     /**
      * Batalkan proses draft invoice.
      */
+    public function toggleEditDraft()
+    {
+        $this->isEditingDraft = !$this->isEditingDraft;
+    }
+
     public function cancelProcess(): void
     {
         $this->showConfirmationCard = false;
         $this->draftData = [];
+        $this->isEditingDraft = false;
 
-        $this->chatLogs[] = [
-            'role' => 'assistant',
-            'content' => "🚫 Proses draft invoice telah **dibatalkan**. Tidak ada data yang disimpan.\n\nJika Anda ingin membuat invoice baru atau mengubah data, silakan beritahu saya kapan saja.",
-        ];
+        $this->appendChatAndSave('assistant', "🚫 Proses draft invoice telah **dibatalkan**. Tidak ada data yang disimpan.\n\nJika Anda ingin membuat invoice baru atau mengubah data, silakan beritahu saya kapan saja.");
 
         $this->dispatch('scroll-to-bottom');
     }
 
+    public function selectProject($id)
+    {
+        $this->selectedProjectId = $id;
+        $this->loadChatHistory();
+    }
+
+    public function startEditProject($id, $name)
+    {
+        $this->editingProjectId = $id;
+        $this->editingProjectName = $name;
+    }
+
+    public function saveProjectName()
+    {
+        if ($this->editingProjectId && trim($this->editingProjectName) !== '') {
+            $project = Project::find($this->editingProjectId);
+            if ($project) {
+                $project->update(['project_name' => trim($this->editingProjectName)]);
+            }
+        }
+        $this->editingProjectId = null;
+        $this->editingProjectName = '';
+    }
+
+    public function cancelEditProject()
+    {
+        $this->editingProjectId = null;
+        $this->editingProjectName = '';
+    }
+
+    public function deleteProject($id)
+    {
+        $project = Project::find($id);
+        if ($project) {
+            $project->delete();
+            if ($this->selectedProjectId === $id) {
+                $this->startNewChat();
+            }
+        }
+    }
+
+    public function startNewChat()
+    {
+        $userId = Auth::id() ?? 1;
+        ChatLog::where('user_id', $userId)
+            ->whereNull('project_id')
+            ->delete();
+
+        $this->selectedProjectId = null;
+        $this->loadChatHistory();
+    }
+
+    public function updatedPdfFile()
+    {
+        $this->validate([
+            'pdfFile' => 'required|mimes:pdf|max:10240', // 10MB max
+        ]);
+
+        $this->isProcessing = true;
+
+        try {
+            $userId = Auth::id() ?? 1;
+            
+            // Store the file
+            $path = $this->pdfFile->store('documents', 'public');
+            $filename = $this->pdfFile->getClientOriginalName();
+            
+            // Save to database
+            $document = ProjectDocument::create([
+                'user_id' => $userId,
+                'project_id' => $this->selectedProjectId,
+                'filename' => $filename,
+                'file_path' => $path,
+            ]);
+
+            // Parse PDF
+            $parser = new Parser();
+            $pdf = $parser->parseFile(storage_path('app/public/' . $path));
+            $text = $pdf->getText();
+            
+            if (empty(trim($text))) {
+                throw new \Exception('Dokumen tidak memiliki teks yang bisa dibaca. Pastikan PDF Anda bukan hasil scan (gambar) melainkan dokumen teks asli.');
+            }
+
+            // Chunk text
+            $chunks = $this->chunkText($text, 1000, 200);
+
+            // Prep payload for ChromaDB
+            $ids = [];
+            $embeddings = [];
+            $documents = [];
+            $metadatas = [];
+
+            foreach ($chunks as $index => $chunk) {
+                // Gunakan local embedding karena Featherless.ai tidak mendukung model embeddings
+                $embedding = $this->getEmbedding($chunk);
+                
+                $ids[] = 'doc_' . $document->id . '_chunk_' . $index;
+                $embeddings[] = $embedding;
+                $documents[] = $chunk;
+                $metadatas[] = [
+                    'document_id' => $document->id,
+                    'project_id' => $this->selectedProjectId ?? 0,
+                    'filename' => $filename,
+                ];
+            }
+
+            // Push to ChromaDB Cloud
+            $chroma = new ChromaDBService();
+            $collectionId = $chroma->getOrCreateCollection('archids_documents');
+            $chroma->addDocuments($collectionId, $ids, $embeddings, $documents, $metadatas);
+
+            $this->chatLogs[] = [
+                'role' => 'assistant',
+                'content' => "✅ Dokumen **{$filename}** berhasil diunggah dan dianalisis. Saya telah menghafalnya, silakan ajukan pertanyaan terkait dokumen ini.",
+            ];
+
+            Log::info("PDF Uploaded & Indexed to Chroma", ['filename' => $filename, 'chunks' => count($chunks)]);
+
+        } catch (\Exception $e) {
+            Log::error("Upload PDF Error: " . $e->getMessage());
+            $this->chatLogs[] = [
+                'role' => 'assistant',
+                'content' => "❌ Gagal mengunggah PDF: " . $e->getMessage(),
+            ];
+        }
+
+        $this->pdfFile = null;
+        $this->isProcessing = false;
+    }
+
+    private function chunkText(string $text, int $chunkSize = 1000, int $overlap = 200)
+    {
+        $text = preg_replace('/\s+/', ' ', trim($text));
+        $length = mb_strlen($text);
+        $chunks = [];
+        $i = 0;
+        
+        while ($i < $length) {
+            $chunk = mb_substr($text, $i, $chunkSize);
+            if (mb_strlen(trim($chunk)) > 50) {
+                $chunks[] = $chunk;
+            }
+            $i += ($chunkSize - $overlap);
+        }
+        
+        return $chunks;
+    }
+
+    private function getEmbedding(string $text): array
+    {
+        // Menggunakan AIML API untuk Embedding sesuai permintaan
+        $apiKey = env('AIMLAPI_KEY', '890271b32e960a1bf58709fcd926d431');
+        $baseUrl = env('AIMLAPI_BASE_URL', 'https://api.aimlapi.com/v1');
+
+        $client = \OpenAI::factory()
+            ->withApiKey($apiKey)
+            ->withBaseUri($baseUrl)
+            ->make();
+
+        $response = $client->embeddings()->create([
+            'model' => 'text-embedding-3-small', // AIML API mendukung proxy model ini
+            'input' => $text,
+        ]);
+
+        return $response->embeddings[0]->embedding;
+    }
+
+    public function logout()
+    {
+        Auth::logout();
+        session()->invalidate();
+        session()->regenerateToken();
+
+        return redirect('/');
+    }
+
     public function render()
     {
-        return view('livewire.chat-workspace');
+        $userId = Auth::id() ?? 1;
+        $query = Project::whereHas('client', function($q) use ($userId) {
+            $q->where('user_id', $userId);
+        })->with('client');
+
+        if ($this->searchProject !== '') {
+            $query->where('project_name', 'like', '%' . $this->searchProject . '%');
+        }
+
+        $activeProjects = $query->latest()->get();
+        $activeProject = $this->selectedProjectId ? Project::with('client')->find($this->selectedProjectId) : null;
+
+        return view('livewire.chat-workspace', [
+            'activeProjects' => $activeProjects,
+            'activeProject' => $activeProject,
+        ]);
     }
 }
