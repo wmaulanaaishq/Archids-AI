@@ -126,10 +126,10 @@ PROMPT;
      * @param  array   $chatHistory   Riwayat chat sebelumnya (format: [['role' => '...', 'content' => '...'], ...]).
      * @return array   Response berupa ['type' => 'message'|'function_call', 'data' => ...]
      */
-    public function processChat(string $userMessage, array $chatHistory = []): array
+    public function processChat(string $userMessage, array $chatHistory = [], ?string $systemContext = null): array
     {
         // === 1. Bangun messages dengan sliding window memory ===
-        $messages = $this->buildMessages($userMessage, $chatHistory);
+        $messages = $this->buildMessages($userMessage, $chatHistory, $systemContext);
 
         try {
             // === 2. Kirim request ke Featherless.ai via HTTP Client ===
@@ -215,11 +215,16 @@ PROMPT;
      * @param  array   $chatHistory
      * @return array
      */
-    private function buildMessages(string $userMessage, array $chatHistory): array
+    private function buildMessages(string $userMessage, array $chatHistory, ?string $systemContext): array
     {
+        $prompt = $this->systemPrompt;
+        if ($systemContext) {
+            $prompt .= "\n\n" . $systemContext;
+        }
+
         // System prompt selalu di posisi pertama
         $messages = [
-            ['role' => 'system', 'content' => $this->systemPrompt],
+            ['role' => 'system', 'content' => $prompt],
         ];
 
         // Terapkan sliding window: ambil N pesan terakhir dari history
