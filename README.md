@@ -1,10 +1,11 @@
-# ArchiAgent 🏛️🤖
+ ArchiAgent 
 
-**ArchiAgent** adalah Micro-CRM berbasis AI Agent yang dirancang khusus untuk membantu freelance arsitek dalam mengelola proyek, klien, dan pembuatan tagihan (invoice) secara otomatis melalui antarmuka *chat* interaktif. 
+ArchiAgent adalah Micro CRM berbasis AI Agent yang dirancang khusus untuk membantu arsitek dalam mengelola proyek, klien, dan pembuatan tagihan (invoice) secara otomatis melalui antarmuka *chat* interaktif. 
 
 Aplikasi ini dibangun sebagai proyek UAS Semester 4, menggabungkan kekuatan Laravel 11, Livewire v3, Tailwind CSS, dan integrasi Artificial Intelligence (AI) menggunakan DeepSeek-V4-Pro via Featherless.ai.
 
 ![ArchiAgent Preview](public/backgroud_asset/landingpage.png) <!-- Screenshot Aplikasi -->
+
 ---
 
 ## ✨ Fitur Utama
@@ -16,7 +17,7 @@ Aplikasi ini dibangun sebagai proyek UAS Semester 4, menggabungkan kekuatan Lara
 
 ### 2. ⚡ Livewire v3 Chat Workspace
 - UI/UX modern dengan desain *Glassmorphism* dan mode gelap (Dark Theme).
-- **Real-time Feedback**: Animasi *typing indicator* dan proses *loading* asinkron tanpa reload halaman.
+- **Real-time Feedback: Animasi *typing indicator* dan proses *loading* asinkron tanpa reload halaman.
 - **Visual Confirmation Card**: Menampilkan ringkasan draf invoice hasil ekstraksi AI sebelum disimpan ke database.
 
 ### 3. 📄 Blueprint-Style PDF Export
@@ -27,8 +28,6 @@ Aplikasi ini dibangun sebagai proyek UAS Semester 4, menggabungkan kekuatan Lara
 ### 4. 🗄️ Relasional Database Management
 - Struktur database rapi menggunakan Eloquent ORM: `Users`, `InvoiceSettings`, `Clients`, `Projects`, dan `Invoices`.
 - Sistem fallback otomatis (Pembuatan record Client & Project otomatis jika belum ada di database).
-
----
 
 ## 🛠️ Teknologi yang Digunakan
 
@@ -63,7 +62,6 @@ cp .env.example .env
 
 # 4. Generate Application Key
 php artisan key:generate
-```
 
 ### 3. Konfigurasi `.env`
 Buka file `.env` dan atur koneksi database serta kredensial API AI:
@@ -110,11 +108,3 @@ Pengembangan aplikasi ini dibagi menjadi 4 fase utama:
 2. **Fase 2**: Implementasi `ArchiAIService` menggunakan HTTP Client ke Featherless.ai, integrasi *Sliding Window Memory*, dan *Function Calling*.
 3. **Fase 3**: Pembuatan UI/UX dengan komponen `ChatWorkspace` Livewire v3 dan Tailwind CSS.
 4. **Fase 4**: Pembuatan fitur cetak PDF (*Monospace Minimalist*) menggunakan DomPDF dengan konfigurasi dari `InvoiceController`.
-
----
-
-## 👨‍💻 Kontributor
-- **W. Maulana Aishq** - *Project UAS Semester 4*
-
----
-*Dibuat dengan ❤️ untuk kemudahan freelance arsitek Indonesia.*
