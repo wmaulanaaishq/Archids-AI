@@ -2,7 +2,7 @@
 
 ArchiAgent adalah Micro CRM berbasis AI Agent yang dirancang khusus untuk membantu arsitek dalam mengelola proyek, klien, dan pembuatan tagihan (invoice) secara otomatis melalui antarmuka *chat* interaktif. 
 
-Aplikasi ini dibangun sebagai proyek UAS Semester 4, menggabungkan kekuatan Laravel 11, Livewire v3, Tailwind CSS, dan integrasi Artificial Intelligence (AI) menggunakan DeepSeek-V4-Pro via Featherless.ai.
+Aplikasi ini dibangun sebagai proyek UAS Semester 4, menggabungkan kekuatan Laravel 12, Livewire v3, Tailwind CSS, dan integrasi Artificial Intelligence (AI) menggunakan DeepSeek-V4-Pro via Featherless.ai.
 
 ![ArchiAgent Preview](public/backgroud_asset/landingpage.png) <!-- Screenshot Aplikasi -->
 
@@ -31,7 +31,7 @@ Aplikasi ini dibangun sebagai proyek UAS Semester 4, menggabungkan kekuatan Lara
 
 ## 🛠️ Teknologi yang Digunakan
 
-- **Backend**: Laravel 11, PHP 8.2+
+- **Backend**: Laravel 12, PHP 8.2+
 - **Frontend**: Livewire v3, Tailwind CSS, Alpine.js (bawaan Livewire)
 - **Database**: MySQL
 - **AI Integration**: Featherless.ai (Model: `deepseek-ai/DeepSeek-V4-Pro`)
@@ -105,6 +105,7 @@ Aplikasi dapat diakses di `http://127.0.0.1:8000`.
 
 Pengembangan aplikasi ini dibagi menjadi 4 fase utama:
 1. **Fase 1**: Setup Database, Migrations (5 tabel dengan cascade delete), dan Eloquent Models.
-2. **Fase 2**: Implementasi `ArchiAIService` menggunakan HTTP Client ke Featherless.ai, integrasi *Sliding Window Memory*, dan *Function Calling*.
+2. **Fase 2**: Implementasi `ArchiAIService` menggunakan HTTP Client bawaan Laravel (Guzzle) ke Featherless.ai. Integrasi *Sliding Window Memory* dan *Function Calling*. 
+   > 💡 **Efisiensi OOP & Arsitektur**: Penggunaan *Service & Adapter Pattern* pada `ArchiAIService` membuat core aplikasi terlepas (decoupled) dari dependensi *AI SDK package* pihak ketiga. Ini membuat kode lebih tahan banting (terutama menghadapi API quirk seperti `name: null`), ringan (*low overhead*), dan mudah di-_maintain_ (siap transisi ke AI provider lain kapan saja).
 3. **Fase 3**: Pembuatan UI/UX dengan komponen `ChatWorkspace` Livewire v3 dan Tailwind CSS.
 4. **Fase 4**: Pembuatan fitur cetak PDF (*Monospace Minimalist*) menggunakan DomPDF dengan konfigurasi dari `InvoiceController
