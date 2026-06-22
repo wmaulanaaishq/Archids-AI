@@ -107,4 +107,4 @@ Pengembangan aplikasi ini dibagi menjadi 4 fase utama:
 1. **Fase 1**: Setup Database, Migrations (5 tabel dengan cascade delete), dan Eloquent Models.
 2. **Fase 2**: Implementasi `ArchiAIService` menggunakan HTTP Client ke Featherless.ai, integrasi *Sliding Window Memory*, dan *Function Calling*.
 3. **Fase 3**: Pembuatan UI/UX dengan komponen `ChatWorkspace` Livewire v3 dan Tailwind CSS.
-4. **Fase 4**: Pembuatan fitur cetak PDF (*Monospace Minimalist*) menggunakan DomPDF dengan konfigurasi dari `InvoiceController`.
+4. **Fase 4**: Pembuatan fitur cetak PDF (*Monospace Minimalist*) menggunakan DomPDF dengan konfigurasi dari `InvoiceController
