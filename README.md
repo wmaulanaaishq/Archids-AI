@@ -24,10 +24,12 @@ AI akan langsung memahami konteks, mengekstrak data persis ke dalam format JSON 
 - **Sliding Window Memory**: Mengirimkan hanya $N$-pesan terakhir (default: 20) untuk menjaga AI tetap fokus pada konteks saat ini tanpa menguras limit token.
 - **Structured Data Extraction**: Memanfaatkan instruksi *Function Calling* (`prepare_invoice_draft`) yang memaksa AI merespons dengan JSON murni, bukan teks naratif. JSON ini langsung dipetakan oleh aplikasi ke *array* PHP.
 
-### 2. ⚡ Arsitektur Livewire v3 & Glassmorphism UI
-- **Single Page Application (SPA) Feel**: *Routing* dan pembaruan antarmuka ditangani oleh *Livewire Component* (`ChatWorkspace.php`) sehingga aplikasi terasa sangat cepat tanpa reload (*hydration* state).
-- **Asynchronous Processing**: Dilengkapi indikator mengetik animasi (typing indicator) dan pembekuan tombol input saat AI sedang memproses (*loading states*).
-- **Glassmorphism Design**: Menggunakan palet Tailwind CSS kustom bergaya "Studio Arsitek" (`#1a4d4a` aksen emerald gelap), blur backdrop, dan perenderan *Markdown* berlapis `prose` styling.
+### 2. ⚡ Livewire v3 Clean Workspace UI
+- **Clean Minimalist Design (Light Theme)**: Antarmuka bergaya *Notion-style* yang cerah (`bg-white` & `slate` tones), memberikan kesan workspace profesional yang bersih, modern, dan sangat mudah dibaca.
+- **Context-Aware Header & Sidebar**: Terdapat Sidebar untuk manajemen multi-proyek, serta *Context Chips* di bagian atas chat yang secara dinamis menampilkan Klien, Proyek, dan Status aktif saat ini.
+- **Quick Actions & Templates**: Layar beranda chat dilengkapi dengan tombol aksi cepat (Upload PDF RAB, Buat Draft Invoice) dan *Prompt Templates* untuk mempercepat kerja.
+- **In-App PDF Preview Modal**: Sistem dilengkapi modal internal untuk mem-*preview* PDF invoice yang telah dibuat secara langsung di dalam workspace tanpa harus berpindah halaman.
+- **Asynchronous Processing**: Dilengkapi indikator mengetik animasi (typing indicator) dan pembekuan tombol input saat AI sedang memproses (*loading states*) tanpa reload halaman.
 
 ### 3. 📄 Blueprint-Style PDF Generation (Laravel DomPDF)
 - Sistem me-render invoice menggunakan `barryvdh/laravel-dompdf`.
@@ -122,7 +124,7 @@ Akses di browser Anda: `http://127.0.0.1:8000`
 Proyek ini melalui 4 fase (*Milestones*) eksekusi terstruktur:
 1. ✅ **Fase 1 (Infrastruktur Database)**: Desain arsitektur tabel relasional, implementasi ORM `belongsTo` & `hasMany` dengan integritas referensial *(Cascade onDelete)*.
 2. ✅ **Fase 2 (Sistem Kecerdasan Buatan)**: Re-engineering `ArchiAIService` menggunakan HTTP facade. Evaluasi respons API `tool_calls` model *DeepSeek*.
-3. ✅ **Fase 3 (Visualisasi Reaktif)**: Konstruksi kelas komponen SPA *Livewire* (`ChatWorkspace`). Pengaturan asinkronitas fungsi memori dan validasi data Kartu Konfirmasi.
+3. ✅ **Fase 3 (Visualisasi Reaktif)**: Konstruksi kelas komponen SPA *Livewire* (`ChatWorkspace`). Pembuatan UI *Clean Minimalist*, manajemen memori percakapan, integrasi Modal Preview PDF, dan validasi *Draft Invoice*.
 4. ✅ **Fase 4 (Export Pipeline)**: Injeksi *Controller* `download()` dan konversi elemen *DOM* Blade menuju layout standar *print-architect* murni PDF.
 
 ---
