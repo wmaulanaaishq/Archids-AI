@@ -1,111 +1,117 @@
- ArchiAgent 
+# Archids AI 🏛️🤖
 
-ArchiAgent adalah Micro CRM berbasis AI Agent yang dirancang khusus untuk membantu arsitek dalam mengelola proyek, klien, dan pembuatan tagihan (invoice) secara otomatis melalui antarmuka *chat* interaktif. 
+**Archids AI** adalah inovasi Micro-CRM (Customer Relationship Management) berbasis *AI Agent* yang dirancang secara spesifik untuk memecahkan masalah administrasi para arsitek *freelance* dan studio desain. Aplikasi ini mengotomatiskan manajemen klien, proyek, dan penciptaan tagihan (invoice) menggunakan antarmuka *chat* natural layaknya asisten virtual pribadi, serta dilengkapi kemampuan "membaca" dokumen RAB proyek Anda.
 
-Aplikasi ini dibangun sebagai proyek UAS Semester 4, menggabungkan kekuatan Laravel 12, Livewire v3, Tailwind CSS, dan integrasi Artificial Intelligence (AI) menggunakan DeepSeek-V4-Pro via Featherless.ai.
+Dibangun sebagai proyek akhir dengan mengimplementasikan metode **Rapid Application Development (RAD)**, sistem ini menggunakan tumpukan teknologi modern yang sangat efisien: **Laravel 12**, **Livewire v3**, **Tailwind CSS**, **ChromaDB** (Vector Database), **AIML API**, dan **Generative AI (DeepSeek-V4-Pro via Featherless.ai)**.
 
-![ArchiAgent Preview](public/backgroud_asset/landingpage.png) <!-- Screenshot Aplikasi -->
-
----
-
-## ✨ Fitur Utama
-
-### 1. 🤖 AI Chat Assistant (Function Calling)
-- Interaksi natural menggunakan Bahasa Indonesia.
-- **Sliding Window Memory**: AI mengingat konteks percakapan (hingga 20 pesan terakhir).
-- **Auto Data Extraction**: AI otomatis mengekstrak informasi penting dari percakapan (Nama Klien, Proyek, No Invoice, Termin, Persentase, dan Nominal) berkat fitur *Function Calling*.
-
-### 2. ⚡ Livewire v3 Chat Workspace
-- UI/UX modern dengan desain *Glassmorphism* dan mode gelap (Dark Theme).
-- **Real-time Feedback: Animasi *typing indicator* dan proses *loading* asinkron tanpa reload halaman.
-- **Visual Confirmation Card**: Menampilkan ringkasan draf invoice hasil ekstraksi AI sebelum disimpan ke database.
-
-### 3. 📄 Blueprint-Style PDF Export
-- Menghasilkan PDF invoice dengan nilai estetika tinggi bergaya *Monospace Minimalist* khas arsitek.
-- Kustomisasi warna aksen, logo studio, dan detail rekening (*Payment Terms*) melalui tabel `invoice_settings`.
-- Menggunakan `barryvdh/laravel-dompdf` dengan struktur HTML murni dan *inline CSS* agar hasil render stabil.
-
-### 4. 🗄️ Relasional Database Management
-- Struktur database rapi menggunakan Eloquent ORM: `Users`, `InvoiceSettings`, `Clients`, `Projects`, dan `Invoices`.
-- Sistem fallback otomatis (Pembuatan record Client & Project otomatis jika belum ada di database).
-
-## 🛠️ Teknologi yang Digunakan
-
-- **Backend**: Laravel 12, PHP 8.2+
-- **Frontend**: Livewire v3, Tailwind CSS, Alpine.js (bawaan Livewire)
-- **Database**: MySQL
-- **AI Integration**: Featherless.ai (Model: `deepseek-ai/DeepSeek-V4-Pro`)
-- **PDF Generator**: barryvdh/laravel-dompdf
-- **HTTP Client**: Guzzle (Laravel HTTP Client)
+![Archids AI Preview](public/backgroud_asset/landingpage.png) *(Preview Aplikasi Archids AI)*
 
 ---
 
-## 🚀 Panduan Instalasi
+## 🌟 Mengapa Archids AI Berbeda?
 
-### 1. Prasyarat
-- PHP >= 8.2 (Ekstensi: `zip`, `dom`, `gd`)
-- Composer
-- MySQL (XAMPP / Laragon / dsb)
+Sebagian besar CRM arsitek berupa *form-based* (pengisian formulir manual). **Archids AI menggunakan pendekatan *Conversational Interface***. Arsitek cukup "mengobrol" dengan AI menggunakan bahasa sehari-hari. 
 
-### 2. Langkah Instalasi
+AI akan langsung memahami konteks obrolan, mengekstrak data persis ke dalam format JSON *(Function Calling)*, menampilkannya sebagai Kartu Konfirmasi visual, menyimpannya ke *Database* relasional, dan seketika mencetaknya dalam bentuk dokumen **PDF Blueprint-Style**.
 
+Selain itu, Archids AI dibekali fitur **RAG (Retrieval-Augmented Generation)**. Anda dapat mengunggah file PDF (misal dokumen spesifikasi bangunan atau RAB), dan AI dapat mengingat serta menganalisis isi dokumen tersebut untuk membantu Anda dalam mengambil keputusan.
+
+---
+
+## ✨ Fitur Utama & Arsitektur Sistem
+
+### 1. 🤖 AI Chat Assistant Terintegrasi (Function Calling)
+- **Model Mutakhir**: Menggunakan `DeepSeek-V4-Pro` dari endpoint Featherless.ai untuk pemahaman konteks tingkat tinggi.
+- **Extended Sliding Window Memory**: Mampu mengingat hingga **150 pesan terakhir**, memastikan konteks obrolan jangka panjang tidak hilang tanpa melewati batas *context window* 32k token.
+- **Structured Data Extraction**: Memanfaatkan instruksi *Function Calling* (`prepare_invoice_draft`) yang memaksa AI merespons dengan JSON murni untuk membentuk tagihan otomatis.
+
+### 2. 📚 Sistem RAG & Vector Database (PdfRagService)
+- **PDF Parsing & Chunking**: Dokumen PDF otomatis diekstrak dan dipecah menjadi potongan teks (chunking) yang efisien.
+- **Vektor Embeddings**: Menggunakan **AIML API** untuk menerjemahkan teks menjadi representasi vektor numerik tingkat tinggi.
+- **ChromaDB**: Hasil vektor disimpan di dalam Chroma Database. Ketika user bertanya, sistem mencari konteks dokumen paling relevan (Vector Search) sebelum mengirimkannya ke LLM, mencegah AI berhalusinasi.
+
+### 3. ⚡ Livewire v3 Modular UI Components
+- **Modular Design**: Antarmuka dipisah menjadi komponen Blade yang dapat digunakan ulang (Reusable Components) seperti `x-chat.sidebar`, `x-chat.message-bubble`, `x-chat.invoice-draft`, dan `x-chat.input-area` (Prinsip Clean Architecture).
+- **Context-Aware Header & Sidebar**: Manajemen multi-proyek dinamis di sidebar tanpa perpindahan halaman (SPA feel).
+- **Asynchronous Processing**: Indikator mengetik animasi (typing indicator) dan pembekuan tombol saat AI memproses tanpa reload halaman.
+
+### 4. 📄 Blueprint-Style PDF Generation
+- Rendering PDF menggunakan `barryvdh/laravel-dompdf`.
+- Desain *Monospace Minimalist* dengan susunan tabel HTML solid untuk menghindari masalah rendering layout CSS modern pada konversi PDF.
+
+### 5. 🗄️ Relasional Database Management (MySQL)
+Sistem menggunakan Eloquent ORM Laravel dengan integritas referensial kuat (*Cascade Deletion*):
+- `users`, `clients`, `projects`, `invoices`: Manajemen CRM hierarkis.
+- `chat_logs`: Perekaman riwayat obrolan AI yang persisten.
+- `project_documents`: Pelacakan dokumen PDF yang terunggah dan terindeks di ChromaDB.
+
+---
+
+## 🛠️ Tech Stack & Ekosistem
+
+| Lapisan | Teknologi | Penjelasan |
+|---|---|---|
+| **Backend Framework** | **Laravel 12 (PHP 8.2+)** | Framework PHP modern dan kuat. |
+| **Frontend UI/UX** | **Livewire v3 & Tailwind CSS** | Interaktivitas real-time *Asynchronous* dengan Blade templating. |
+| **Relational DB** | **MySQL** | Kuat dan tangguh untuk data finansial dan relasi CRM. |
+| **Vector DB** | **ChromaDB** | Database khusus penyimpanan vektor untuk pencarian konteks dokumen (RAG). |
+| **LLM Inference** | **Featherless.ai (DeepSeek-V4-Pro)** | Mesin kognitif utama untuk percakapan dan *Function Calling*. |
+| **Embeddings** | **AIML API** | Mengonversi chunking dokumen PDF menjadi vektor semantik. |
+
+---
+
+## 🚀 Panduan Instalasi Lokal
+
+### 1. Prasyarat Sistem
+- PHP >= 8.2 (Ekstensi `zip`, `dom`, `gd`, `fileinfo` aktif)
+- Composer & NPM
+- MySQL Database Engine
+- Python (Opsional jika ingin menjalankan ekstensi tertentu)
+
+### 2. Instalasi Dependensi
 ```bash
-# 1. Clone repositori
 git clone https://github.com/wmaulanaaishq/Archids-AI.git
 cd Archids-AI
-
-# 2. Install dependensi PHP
 composer install
+npm install && npm run build
+```
 
-# 3. Setup file environment
+### 3. Konfigurasi Environment (`.env`)
+Salin file konfigurasi:
+```bash
 cp .env.example .env
-
-# 4. Generate Application Key
 php artisan key:generate
-
-### 3. Konfigurasi `.env`
-Buka file `.env` dan atur koneksi database serta kredensial API AI:
-
+```
+Sesuaikan `.env` Anda dengan kredensial database dan API:
 ```env
-# Database
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=archiagent_db # Pastikan database ini sudah dibuat
+DB_DATABASE=archiagent_db
 DB_USERNAME=root
 DB_PASSWORD=
 
-# Featherless.ai API (OpenAI Compatible)
 OPENAI_API_KEY=your_featherless_api_key_here
 OPENAI_BASE_URL=https://api.featherless.ai/v1
-OPENAI_REQUEST_TIMEOUT=60
 
-# ArchiAI Custom Settings
 ARCHIAI_MODEL=deepseek-ai/DeepSeek-V4-Pro
-ARCHIAI_MAX_HISTORY=20
+ARCHIAI_MAX_HISTORY=150
+
+CHROMA_HOST=api.trychroma.com
+CHROMA_API_KEY=your_chroma_api_key_here
+CHROMA_TENANT=your_tenant_id
+CHROMA_DATABASE=archidsAI
+
+AIMLAPI_KEY=your_aiml_api_key_here
 ```
 
-### 4. Jalankan Migrasi & Seeding Dummy User
+### 4. Migrasi Database & Seeding
 ```bash
 php artisan migrate
-
-# (Opsional) Buat user demo untuk testing
-mysql -u root archiagent_db -e "INSERT INTO users (id, name, email, password, created_at, updated_at) VALUES (1, 'Arsitek Demo', 'demo@archiagent.test', 'password', NOW(), NOW());"
 ```
 
-### 5. Jalankan Server Development
+### 5. Jalankan Aplikasi
 ```bash
 php artisan serve
 ```
-Aplikasi dapat diakses di `http://127.0.0.1:8000`.
+Akses di browser Anda: `http://127.0.0.1:8000`
 
 ---
-
-## 🏗️ Struktur Proyek (Fase Pengembangan)
-
-Pengembangan aplikasi ini dibagi menjadi 4 fase utama:
-1. **Fase 1**: Setup Database, Migrations (5 tabel dengan cascade delete), dan Eloquent Models.
-2. **Fase 2**: Implementasi `ArchiAIService` menggunakan HTTP Client bawaan Laravel (Guzzle) ke Featherless.ai. Integrasi *Sliding Window Memory* dan *Function Calling*. 
-   > 💡 **Efisiensi OOP & Arsitektur**: Penggunaan *Service & Adapter Pattern* pada `ArchiAIService` membuat core aplikasi terlepas (decoupled) dari dependensi *AI SDK package* pihak ketiga. Ini membuat kode lebih tahan banting (terutama menghadapi API quirk seperti `name: null`), ringan (*low overhead*), dan mudah di-_maintain_ (siap transisi ke AI provider lain kapan saja).
-3. **Fase 3**: Pembuatan UI/UX dengan komponen `ChatWorkspace` Livewire v3 dan Tailwind CSS.
-4. **Fase 4**: Pembuatan fitur cetak PDF (*Monospace Minimalist*) menggunakan DomPDF dengan konfigurasi dari `InvoiceController
+*Dibuat oleh W. Maulana Aishq — Implementasi Rapid Application Development (RAD) untuk Solusi CRM Arsitektur Cerdas.*
