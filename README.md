@@ -112,6 +112,3 @@ php artisan migrate
 php artisan serve
 ```
 Akses di browser Anda: `http://127.0.0.1:8000`
-
----
-*Dibuat oleh W. Maulana Aishq — Implementasi Rapid Application Development (RAD) untuk Solusi CRM Arsitektur Cerdas.*
