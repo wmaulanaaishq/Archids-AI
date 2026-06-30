@@ -1,7 +1,6 @@
 # Archids AI 🏛️🤖
 
 **Archids AI** adalah inovasi Micro-CRM (Customer Relationship Management) berbasis *AI Agent* yang dirancang secara spesifik untuk memecahkan masalah administrasi para arsitek *freelance* dan studio desain. Aplikasi ini mengotomatiskan manajemen klien, proyek, dan penciptaan tagihan (invoice) menggunakan antarmuka *chat* natural layaknya asisten virtual pribadi, serta dilengkapi kemampuan "membaca" dokumen RAB proyek Anda.
-
 Dibangun sebagai proyek akhir dengan mengimplementasikan metode **Rapid Application Development (RAD)**, sistem ini menggunakan tumpukan teknologi modern yang sangat efisien: **Laravel 12**, **Livewire v3**, **Tailwind CSS**, **ChromaDB** (Vector Database), **AIML API**, dan **Generative AI (DeepSeek-V4-Pro via Featherless.ai)**.
 
 ![Archids AI Preview](public/backgroud_asset/landingpage.png) *(Preview Aplikasi Archids AI)*
